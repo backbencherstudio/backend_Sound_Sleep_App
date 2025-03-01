@@ -9,6 +9,10 @@ const fs = require("fs");
 const path = require("path");
 
 const signUpController = async (req, res) => {
+  console.log("Heat");
+  console.log(res);
+  console.log(req.body);
+  console.log(req.file);
   try {
     const { name, email, password } = req.body;
     const missingField = ["name", "email", "password"].find(
@@ -63,7 +67,7 @@ const loginController = async (req, res) => {
 
     const user = await User.findOne({ email });
     if (!user) return res.status(400).json({ message: "user not found" });
-
+    console.log(user);
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) return res.status(400).json({ message: "Invalid password" });
 
@@ -162,43 +166,39 @@ const verifyResetCode = async (req, res) => {
 
 const resetPassword = async (req, res) => {
   try {
-    const { email, newPassword } = req.body;
+    const { currentPassword, newPassword } = req.body;
 
-    if (!email || !newPassword) {
+    if (!currentPassword || !newPassword) {
       return res.status(400).json({
-        message: `${!email ? "Email" : "New password"} is required!`,
+        message: `${
+          !currentPassword ? "Current password" : "New password"
+        } is required!`,
       });
     }
 
-    const user = await User.findOne({ email });
+    const userId = req.user.id;
 
+    // Find user by ID
+    const user = await User.findById(userId);
     if (!user) {
       return res.status(404).json({ message: "User not found!" });
     }
 
+    const isMatch = await bcrypt.compare(currentPassword, user.password);
+    if (!isMatch) {
+      return res.status(400).json({ message: "Incorrect current password!" });
+    }
+
+    // Hash the new password
     const hashedPassword = await bcrypt.hash(newPassword, 10);
 
+    // Update the password
     user.password = hashedPassword;
     await user.save();
 
-    // Generate JWT token
-    const token = jwt.sign(
-      { id: user._id, role: user.role },
-      process.env.JWT_SECRET,
-      { expiresIn: "30d" }
-    );
-
     res.status(200).json({
       success: true,
-      message: "Password reset successfully!",
-      token,
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        image: user.image ? `${baseUrl}${user.image}` : null,
-        role: user.role,
-      },
+      message: "Password changed successfully!",
     });
   } catch (error) {
     res.status(500).json({
@@ -208,6 +208,7 @@ const resetPassword = async (req, res) => {
     });
   }
 };
+
 
 const deleteUser = async (req, res) => {
   try {
@@ -226,7 +227,6 @@ const deleteUser = async (req, res) => {
   }
 };
 
-
 const updateUser = async (req, res) => {
   try {
     const { name, email } = req.body;
@@ -244,7 +244,7 @@ const updateUser = async (req, res) => {
       // Remove old image if it exists
       if (user.image) {
         const oldImagePath = path.join(__dirname, "../../", user.image);
-        console.log("oldImagePath", oldImagePath)
+        console.log("oldImagePath", oldImagePath);
         if (fs.existsSync(oldImagePath)) {
           fs.unlinkSync(oldImagePath);
         }
@@ -274,7 +274,6 @@ const updateUser = async (req, res) => {
   }
 };
 
-
 module.exports = {
   signUpController,
   loginController,
@@ -282,5 +281,6 @@ module.exports = {
   verifyResetCode,
   resetPassword,
   updateUser,
+  resetPassword,
   deleteUser,
 };
