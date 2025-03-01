@@ -6,7 +6,7 @@ const path = require("path");
 
 const users = require("./module/users/users.routes");
 const soundRoutes = require("./module/sound/audio.routes");
-
+const feedback = require("./module/feedback/feedback.routes")
 dotenv.config();
 
 const app = express();
@@ -37,6 +37,7 @@ app.use(morgan("dev"));
 
 app.use("/api/users", users);
 app.use("/api/sounds", soundRoutes);
+app.use("/api/feedback", feedback)
 
 app.use("/test", (req, res) => {
   res.status(200).json({
@@ -58,3 +59,6 @@ app.use((err, req, res, next) => {
 });
 
 module.exports = app;
+
+
+// https://chatgpt.com/canvas/shared/67c2a69bf27c8191a6ee7f7b2c43ce2a

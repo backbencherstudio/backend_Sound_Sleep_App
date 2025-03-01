@@ -9,10 +9,7 @@ const fs = require("fs");
 const path = require("path");
 
 const signUpController = async (req, res) => {
-  console.log("Heat");
-  console.log(res);
-  console.log(req.body);
-  console.log(req.file);
+
   try {
     const { name, email, password } = req.body;
     const missingField = ["name", "email", "password"].find(
