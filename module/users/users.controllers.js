@@ -9,7 +9,6 @@ const fs = require("fs");
 const path = require("path");
 
 const signUpController = async (req, res) => {
-
   try {
     const { name, email, password } = req.body;
     const missingField = ["name", "email", "password"].find(
@@ -41,7 +40,14 @@ const signUpController = async (req, res) => {
       success: true,
       message: "User created successfully",
       token,
-      user: { id: user._id, name, email, image: `${baseUrl}${user.image}` },
+      user: {
+        id: user._id,
+        name,
+        email,
+        image: `${baseUrl}${user.image}`,
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt,
+      },
     });
   } catch (error) {
     res.status(500).json({
@@ -83,6 +89,8 @@ const loginController = async (req, res) => {
         name: user.name,
         email: user.email,
         image: `${baseUrl}${user.image}`,
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt,
       },
     });
   } catch (error) {
@@ -206,7 +214,6 @@ const resetPassword = async (req, res) => {
   }
 };
 
-
 const deleteUser = async (req, res) => {
   try {
     const { email } = req.params;
@@ -260,6 +267,8 @@ const updateUser = async (req, res) => {
         email: user.email,
         image: `${baseUrl}${user.image}`,
         role: user.role,
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt,
       },
     });
   } catch (error) {

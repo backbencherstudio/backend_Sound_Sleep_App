@@ -1,7 +1,6 @@
 const { baseUrl } = require("../../utils/image_path");
 const Feedback = require("./feedback.models");
 
-// Create feedback
 const createFeedback = async (req, res) => {
   try {
     const { reading, emoji, category, description } = req.body;
@@ -39,7 +38,6 @@ const createFeedback = async (req, res) => {
   }
 };
 
-// Get all feedback (Populate user details)
 const getAllFeedback = async (req, res) => {
   try {
     const feedback = await Feedback.find()
@@ -73,7 +71,7 @@ const getAllFeedback = async (req, res) => {
   }
 };
 
-// Get feedback by category
+
 const getFeedbackByCategory = async (req, res) => {
   try {
     const { category } = req.params;
