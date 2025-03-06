@@ -1,13 +1,11 @@
 const mongoose = require("mongoose");
 
 const emojiEnum = [
-  "happy",
-  "sad",
   "angry",
-  "cool",
-  "love",
-  "thinking",
-  "playful",
+  "sad",
+  "happy",
+  "neutral",
+  "not_bad",
 ];
 
 const feedbackSchema = new mongoose.Schema(

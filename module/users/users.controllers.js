@@ -61,7 +61,7 @@ const signUpController = async (req, res) => {
 const loginController = async (req, res) => {
   try {
     const { email, password } = req.body;
-
+    console.log(email, password)
     if (!email || !password) {
       return res
         .status(400)
@@ -79,7 +79,7 @@ const loginController = async (req, res) => {
       process.env.JWT_SECRET,
       { expiresIn: "30d" }
     );
-
+     console.log(token)
     res.status(200).json({
       success: true,
       message: "Login successful",

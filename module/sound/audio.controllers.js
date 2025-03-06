@@ -1,16 +1,15 @@
 const fs = require('fs');
 const path = require('path');
+const { getAudioDurationInSeconds } = require('get-audio-duration');
 const Sound = require('./audio.models');
 const upload = require('../../config/multer.config');
 const { baseUrl } = require('../../utils/image_path');
-
 
 const getSoundsController = async (req, res) => {
     try {
       const { category, search } = req.query;
       let filter = {};
   
-      // Ensure case-insensitive category filtering
       if (category) {
         filter.category = { $regex: `^${category}$`, $options: "i" };
       }
@@ -24,19 +23,32 @@ const getSoundsController = async (req, res) => {
   
       const sounds = await Sound.find(filter);
   
-      // Ensure baseUrl is appended if it's missing
-      const updatedSounds = sounds.map((sound) => ({
-        ...sound._doc,
-        imagePath: sound.imagePath.match(/^https?:\/\//) ? sound.imagePath : `${baseUrl}${sound.imagePath}`,
-        audioPath: sound.audioPath.match(/^https?:\/\//) ? sound.audioPath : `${baseUrl}${sound.audioPath}`,
+      // Process each sound to include duration
+      const updatedSounds = await Promise.all(sounds.map(async (sound) => {
+        const audioPath = path.join(__dirname, '../../', sound.audioPath);
+        let duration = 0;
+        
+        try {
+          if (fs.existsSync(audioPath)) {
+            duration = await getAudioDurationInSeconds(audioPath);
+          }
+        } catch (err) {
+          console.error(`Error getting duration for ${audioPath}:`, err);
+        }
+
+        return {
+          ...sound._doc,
+          duration: Math.round(duration), // Duration in seconds
+          imagePath: sound.imagePath.match(/^https?:\/\//) ? sound.imagePath : `${baseUrl}${sound.imagePath}`,
+          audioPath: sound.audioPath.match(/^https?:\/\//) ? sound.audioPath : `${baseUrl}${sound.audioPath}`,
+        };
       }));
   
       res.status(200).json(updatedSounds);
     } catch (error) {
       res.status(500).json({ message: "Error fetching sounds", error: error.message });
     }
-  };
-  
+};
 
 
 const addSoundsController = async (req, res) => {
