@@ -5,7 +5,6 @@ const createFeedback = async (req, res) => {
   try {
     const { reading, emoji, category, description } = req.body;
 
-    // Check for missing fields
     const missingField = ["reading", "emoji", "description"].find(
       (field) => !req.body[field]
     );
@@ -14,7 +13,7 @@ const createFeedback = async (req, res) => {
     }
     console.log(req.user);
     const feedback = new Feedback({
-      user: req.user.id, // Assign user ID from token
+      user: req.user.id,
       reading,
       emoji,
       category,

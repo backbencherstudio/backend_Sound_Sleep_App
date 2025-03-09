@@ -1,5 +1,6 @@
 require("dotenv").config();
-const { baseUrl } = require("../../utils/image_path");
+const moment = require("moment");
+const { baseUrl, generateReferralCode } = require("../../utils/image_path");
 const { generateOTP, sendForgotPasswordOTP } = require("../../utils/otpUtils");
 const User = require("../users/users.models");
 const bcrypt = require("bcrypt");
@@ -7,6 +8,14 @@ const jwt = require("jsonwebtoken");
 
 const fs = require("fs");
 const path = require("path");
+
+const goalMapping = {
+  "Deep Sleep": "Get a quality Sleep",
+  "Overcome Stress": "Manage stress & Anxiety",
+  "Feel Nature": "Hear diverse nature sounds",
+  "Improve Performance": "Get a better start",
+  "Boost Concentration": "Improve focus",
+};
 
 const signUpController = async (req, res) => {
   try {
@@ -23,11 +32,18 @@ const signUpController = async (req, res) => {
       return res.status(400).json({ message: "User already exists" });
 
     const hashedPassword = await bcrypt.hash(password, 10);
+
+    let referralCode;
+    do {
+      referralCode = generateReferralCode();
+    } while (await User.exists({ referralCode: referralCode }));
+
     const user = await User.create({
       name,
       email,
       password: hashedPassword,
       image: req.file ? `/uploads/${req.file.filename}` : null,
+      referralCode,
     });
 
     const token = jwt.sign(
@@ -45,6 +61,7 @@ const signUpController = async (req, res) => {
         name,
         email,
         image: `${baseUrl}${user.image}`,
+        role: user.role,
         createdAt: user.createdAt,
         updatedAt: user.updatedAt,
       },
@@ -58,10 +75,85 @@ const signUpController = async (req, res) => {
   }
 };
 
+
+const setGoal = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    let { userGoals } = req.body;
+
+    if (!Array.isArray(userGoals)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid input format. Please provide an array.",
+      });
+    }
+
+    const validGoals = userGoals.filter(goal => goalMapping[goal]);
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    user.userGoals = validGoals;
+    await user.save();
+
+    const formattedGoals = validGoals.map(goal => ({
+      userGoals: goal,
+      goalDescriptions: goalMapping[goal],
+    }));
+
+    res.status(200).json({
+      success: true,
+      message: validGoals.length > 0 ? "Goals updated successfully!" : "Goals skipped successfully!",
+      goals: formattedGoals,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Internal server error",
+      error: error.message,
+    });
+  }
+};
+
+
+
+
+const getGoal = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const user = await User.findById(userId);
+    
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const formattedGoals = user.userGoals.map(goal => ({
+      userGoals: goal,
+      goalDescriptions: goalMapping[goal]
+    }));
+
+    res.status(200).json({
+      success: true,
+      message: user.userGoals.length > 0 ? "Goals retrieved successfully!" : "No goals set yet.",
+      goals: formattedGoals
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Internal server error",
+      error: error.message,
+    });
+  }
+};
+
+
+
 const loginController = async (req, res) => {
   try {
     const { email, password } = req.body;
-    console.log(email, password)
+    console.log(email, password);
     if (!email || !password) {
       return res
         .status(400)
@@ -74,12 +166,22 @@ const loginController = async (req, res) => {
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) return res.status(400).json({ message: "Invalid password" });
 
+    if (!user.referralCode) {
+      let referralCode;
+      do {
+        referralCode = generateReferralCode();
+      } while (await User.exists({ referralCode: referralCode }));
+
+      user.referralCode = referralCode;
+      await user.save();
+    }
+
     const token = jwt.sign(
       { id: user._id, role: user.role },
       process.env.JWT_SECRET,
       { expiresIn: "30d" }
     );
-     console.log(token)
+    console.log(token);
     res.status(200).json({
       success: true,
       message: "Login successful",
@@ -89,6 +191,7 @@ const loginController = async (req, res) => {
         name: user.name,
         email: user.email,
         image: `${baseUrl}${user.image}`,
+        role: user.role,
         createdAt: user.createdAt,
         updatedAt: user.updatedAt,
       },
@@ -169,10 +272,45 @@ const verifyResetCode = async (req, res) => {
   }
 };
 
+const changePassword = async (req, res) => {
+  try {
+    const { email, newPassword } = req.body;
+
+    if (!email || !newPassword) {
+      return res.status(400).json({
+        message: `${!email ? "Email" : "New password"} is required!`,
+      });
+    }
+
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json({ message: "User not found!" });
+    }
+
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    user.password = hashedPassword;
+    await user.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Password changed successfully!",
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Internal server error",
+      error: error.message,
+    });
+  }
+};
+
+
 const resetPassword = async (req, res) => {
   try {
     const { currentPassword, newPassword } = req.body;
-
+    console.log(currentPassword, newPassword);
     if (!currentPassword || !newPassword) {
       return res.status(400).json({
         message: `${
@@ -261,6 +399,7 @@ const updateUser = async (req, res) => {
     res.status(200).json({
       success: true,
       message: "User updated successfully",
+      token: null,
       user: {
         id: user._id,
         name: user.name,
@@ -280,6 +419,50 @@ const updateUser = async (req, res) => {
   }
 };
 
+const ReferralCode = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    res.status(200).json({
+      success: true,
+      referralCode: user.referralCode,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Internal server error",
+      error: error.message,
+    });
+  }
+};
+
+const joiningDate = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const relativeTime = moment(user.createdAt).fromNow();
+
+    res.status(200).json({
+      success: true,
+      joiningDate: `Joiend ${relativeTime}`,
+      // createdAt: user.createdAt
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Internal server error",
+      error: error.message,
+    });
+  }
+};
+
 module.exports = {
   signUpController,
   loginController,
@@ -289,4 +472,9 @@ module.exports = {
   updateUser,
   resetPassword,
   deleteUser,
+  ReferralCode,
+  joiningDate,
+  changePassword,
+  setGoal,
+  getGoal
 };

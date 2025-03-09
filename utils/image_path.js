@@ -5,4 +5,8 @@ const getImageUrl = (imagePath) => {
 
 const baseUrl = process.env.APP_URL;
 
-module.exports = { getImageUrl, baseUrl };
+const generateReferralCode = () => {
+  return Math.random().toString(36).substring(2, 10).toUpperCase();
+};
+
+module.exports = { getImageUrl, baseUrl, generateReferralCode };
