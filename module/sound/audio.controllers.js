@@ -20,7 +20,7 @@ const getSoundsController = async (req, res) => {
           { subtitle: { $regex: search, $options: "i" } },
         ];
       }
-  
+ 
       const sounds = await Sound.find(filter);
   
       // Process each sound to include duration
@@ -49,7 +49,6 @@ const getSoundsController = async (req, res) => {
       res.status(500).json({ message: "Error fetching sounds", error: error.message });
     }
 };
-
 
 const addSoundsController = async (req, res) => {
     try {
@@ -93,7 +92,6 @@ const addSoundsController = async (req, res) => {
         res.status(500).json({ message: 'Error adding sound', error: error.message });
     }
 };
-
 
 module.exports = {
     getSoundsController,
