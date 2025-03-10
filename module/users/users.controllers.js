@@ -75,7 +75,6 @@ const signUpController = async (req, res) => {
   }
 };
 
-
 const setGoal = async (req, res) => {
   try {
     const userId = req.user.id;
@@ -117,9 +116,6 @@ const setGoal = async (req, res) => {
   }
 };
 
-
-
-
 const getGoal = async (req, res) => {
   try {
     const userId = req.user.id;
@@ -147,8 +143,6 @@ const getGoal = async (req, res) => {
     });
   }
 };
-
-
 
 const loginController = async (req, res) => {
   try {

@@ -70,7 +70,6 @@ const getAllFeedback = async (req, res) => {
   }
 };
 
-
 const getFeedbackByCategory = async (req, res) => {
   try {
     const { category } = req.params;
