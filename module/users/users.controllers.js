@@ -87,7 +87,7 @@ const setGoal = async (req, res) => {
       });
     }
 
-    const validGoals = userGoals.filter(goal => goalMapping[goal]);
+    const validGoals = userGoals.filter((goal) => goalMapping[goal]);
 
     const user = await User.findById(userId);
     if (!user) {
@@ -97,14 +97,17 @@ const setGoal = async (req, res) => {
     user.userGoals = validGoals;
     await user.save();
 
-    const formattedGoals = validGoals.map(goal => ({
+    const formattedGoals = validGoals.map((goal) => ({
       userGoals: goal,
       goalDescriptions: goalMapping[goal],
     }));
 
     res.status(200).json({
       success: true,
-      message: validGoals.length > 0 ? "Goals updated successfully!" : "Goals skipped successfully!",
+      message:
+        validGoals.length > 0
+          ? "Goals updated successfully!"
+          : "Goals skipped successfully!",
       goals: formattedGoals,
     });
   } catch (error) {
@@ -120,20 +123,23 @@ const getGoal = async (req, res) => {
   try {
     const userId = req.user.id;
     const user = await User.findById(userId);
-    
+
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
 
-    const formattedGoals = user.userGoals.map(goal => ({
+    const formattedGoals = user.userGoals.map((goal) => ({
       userGoals: goal,
-      goalDescriptions: goalMapping[goal]
+      goalDescriptions: goalMapping[goal],
     }));
 
     res.status(200).json({
       success: true,
-      message: user.userGoals.length > 0 ? "Goals retrieved successfully!" : "No goals set yet.",
-      goals: formattedGoals
+      message:
+        user.userGoals.length > 0
+          ? "Goals retrieved successfully!"
+          : "No goals set yet.",
+      goals: formattedGoals,
     });
   } catch (error) {
     res.status(500).json({
@@ -147,7 +153,7 @@ const getGoal = async (req, res) => {
 const loginController = async (req, res) => {
   try {
     const { email, password } = req.body;
-    console.log(email, password);
+
     if (!email || !password) {
       return res
         .status(400)
@@ -156,7 +162,7 @@ const loginController = async (req, res) => {
 
     const user = await User.findOne({ email });
     if (!user) return res.status(400).json({ message: "user not found" });
-    console.log(user);
+
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) return res.status(400).json({ message: "Invalid password" });
 
@@ -175,7 +181,7 @@ const loginController = async (req, res) => {
       process.env.JWT_SECRET,
       { expiresIn: "30d" }
     );
-    console.log(token);
+
     res.status(200).json({
       success: true,
       message: "Login successful",
@@ -281,7 +287,6 @@ const changePassword = async (req, res) => {
       return res.status(404).json({ message: "User not found!" });
     }
 
-
     const hashedPassword = await bcrypt.hash(newPassword, 10);
 
     user.password = hashedPassword;
@@ -300,11 +305,10 @@ const changePassword = async (req, res) => {
   }
 };
 
-
 const resetPassword = async (req, res) => {
   try {
     const { currentPassword, newPassword } = req.body;
-    console.log(currentPassword, newPassword);
+
     if (!currentPassword || !newPassword) {
       return res.status(400).json({
         message: `${
@@ -348,18 +352,43 @@ const resetPassword = async (req, res) => {
 
 const deleteUser = async (req, res) => {
   try {
-    const { email } = req.params;
-    console.log(email);
-    const user = await User.findOneAndDelete({ email });
+    const { email, password } = req.body;
 
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
+    if (!email || !password) {
+      return res.status(400).json({
+        success: false,
+        message: `${!email ? "Email" : "Password"} is required!`,
+      });
     }
 
-    res.status(200).json({ message: "User deleted successfully" });
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found!" });
+    }
+
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Incorrect password!" });
+    }
+
+    await User.deleteOne({ email });
+
+    res
+      .status(200)
+      .json({ success: true, message: "User deleted successfully!" });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: "Internal server error" });
+    res
+      .status(500)
+      .json({
+        success: false,
+        message: "Internal server error",
+        error: error.message,
+      });
   }
 };
 
@@ -380,7 +409,7 @@ const updateUser = async (req, res) => {
       // Remove old image if it exists
       if (user.image) {
         const oldImagePath = path.join(__dirname, "../../", user.image);
-        console.log("oldImagePath", oldImagePath);
+ 
         if (fs.existsSync(oldImagePath)) {
           fs.unlinkSync(oldImagePath);
         }
@@ -470,5 +499,5 @@ module.exports = {
   joiningDate,
   changePassword,
   setGoal,
-  getGoal
+  getGoal,
 };

@@ -11,7 +11,6 @@ const createFeedback = async (req, res) => {
     if (missingField) {
       return res.status(400).json({ message: `${missingField} is required!` });
     }
-    console.log(req.user);
     const feedback = new Feedback({
       user: req.user.id,
       reading,

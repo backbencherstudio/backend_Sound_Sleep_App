@@ -33,7 +33,7 @@ router.patch("/reset-password",verifyUser,  resetPassword);
 
 router.put("/update-user", verifyUser, upload.single("image"), updateUser);
 
-router.delete("/delete-user/:email", deleteUser);
+router.delete("/delete-user", deleteUser);
 
 
 module.exports = router;

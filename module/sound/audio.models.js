@@ -8,4 +8,4 @@ const soundSchema = new mongoose.Schema({
     audioPath: { type: String, required: true }
 });
 
-module.exports = mongoose.model('Sound', soundSchema); 
+module.exports = mongoose.model('Sound', soundSchema);

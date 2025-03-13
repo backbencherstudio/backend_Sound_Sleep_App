@@ -36,7 +36,7 @@ const sendEmail = async (to, subject, htmlContent) => {
 
 // Different email templates can be passed here
 const sendRegistrationOTPEmail = async (userName, email, otp) => {
-  console.log("hit sendOtp 2" )
+
   await sendEmail(email, "Master-Energy Verification", emailMessage(userName, email, otp)); 
 };
 

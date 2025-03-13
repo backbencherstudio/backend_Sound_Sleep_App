@@ -105,7 +105,7 @@ const addSoundsController = async (req, res) => {
           audioPath: `${baseUrl}/uploads/${req.files.audio[0].filename}`,
         },
       });
-    });
+    });0
   } catch (error) {
     res.status(500).json({
       success: false,
@@ -131,7 +131,6 @@ const getAllSound = async (req, res) => {
       .skip(skip)
       .limit(limit);
 
-    // Add baseUrl to imagePath and audioPath
     const updatedSounds = sounds.map((sound) => ({
       ...sound._doc,
       imagePath: sound.imagePath.match(/^https?:\/\//)
@@ -159,8 +158,53 @@ const getAllSound = async (req, res) => {
   }
 };
 
+
+const searchSoundsByCategoryController = async (req, res) => {
+  try {
+    const { category, search } = req.query;
+    
+    if (!category) {
+      return res.status(400).json({ message: "Category is required" });
+    }
+
+    let filter = { category: { $regex: `^${category}$`, $options: "i" } };
+
+    if (search) {
+      filter.$or = [
+        { title: { $regex: search, $options: "i" } },
+        { subtitle: { $regex: search, $options: "i" } },
+      ];
+    }
+
+    const sounds = await Sound.find(filter).sort({ createdAt: -1 });
+
+    const updatedSounds = sounds.map((sound) => ({
+      ...sound._doc,
+      imagePath: sound.imagePath.match(/^https?:\/\//)
+        ? sound.imagePath
+        : `${baseUrl}${sound.imagePath}`,
+      audioPath: sound.audioPath.match(/^https?:\/\//)
+        ? sound.audioPath
+        : `${baseUrl}${sound.audioPath}`,
+    }));
+
+    res.status(200).json({
+      success: true,
+      sounds: updatedSounds,
+      totalResults: updatedSounds.length,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Error searching sounds",
+      error: error.message,
+    });
+  }
+};
+
 module.exports = {
   getSoundsController,
   addSoundsController,
   getAllSound,
+  searchSoundsByCategoryController,
 };
